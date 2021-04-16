@@ -33,57 +33,70 @@ clubhouse_epic_url = "https://api.clubhouse.io/api/v3/epics"
 clubhouse_story_url = "https://api.clubhouse.io/api/v3/stories"
 clubhouse_headers = {"Content-Type": 'application/json', "Clubhouse-Token": clubhouse_token}
 
-# Actually make the request
+# Actually make the request for all the tickets tagged 'move'
 r = requests.get(pivotal_url, headers=pivotal_headers)
 
 # Decode the json
 tickets = json.loads(r.text)
 
 
-# We need to go through all the tickets and get the labels first to create epics to assign these later
-
+# We need to go through all the tickets once first and get the labels. This lets us create epics to assign the tickets to later.
 for ticket in tickets:
-	
 	for label in ticket['labels']:
+
+		# Ignore the 'move' label
 		if label['name'] != "move":
+
+			# Get a list of epics we already have so we don't create duplicates
 			existing_epics = requests.get(clubhouse_epic_url, headers=clubhouse_headers)
 			existing_epics = json.loads(existing_epics.text)
+
+			# Check if the label we're currently on exists in the list of epics from Clubhouse
 			found = any(x['name'] == label['name'] for x in existing_epics)
 			if found == False:
-				new_epic_data = '{"name":"' + label['name'] + '"}' 
 
+				# Set up a new epic with the name of the label and create it
+				new_epic_data = '{"name":"' + label['name'] + '"}' 
 				new_epic = requests.post(clubhouse_epic_url, headers=clubhouse_headers, data = new_epic_data)
 				print("Created an epic: " + label['name'])
 				
 
 # This is where the fun begins.
-# We've got the tickets, so let's create all the epics in Clubhouse
-
 for ticket in tickets:
+
+	# We're going to just wrap this all in a try catch. Just in case.
 	try:
+		# Set the epic and description to default values
 		epic_id = None
 		description = "No description provided"
-		# Get all the labels so we can put it in the right epic
+
+		# Get all the labels for this ticket so we can put it in the right epic
 		for label in ticket['labels']:
+
 			# If the label is anything except 'move'
 			if label['name'] != "move":
 				
+				# Get the list of existing epics
 				existing_epics = requests.get(clubhouse_epic_url, headers=clubhouse_headers)
 				existing_epics = json.loads(existing_epics.text)
 
-				# Get the ID of the epic we're handling from the existing epics and check if it exists in Clubhouse. If not, create the epic
+				# Get the ID of the epic we're handling from the existing epics and check if it exists in Clubhouse
+				# Provided it does, set the epic ID to that epic from Clubhouse
 				for epic in existing_epics:
 					if epic['name'] == label['name']:
 						epic_id = epic['id']
 		
-		# Set up the ticket object
+		# Set up the ticket object with some default values. We will always have a name
 		estimate = 1
-
 		name = ticket['name']
+
+		# Check for description and estimate as these are optional in Pivotal but not in Clubhouse
 		if 'description' in ticket:
 			description = ticket['description']
 		if 'estimate' in ticket:
 			estimate = ticket['estimate']
+
+		# Set up the data. Our epic and estimate may be None but they must be set to _something_
 		new_ticket_data = {
 			"name": name, 
 			"description":description, 
@@ -101,13 +114,14 @@ for ticket in tickets:
 		# Grab the ID of the newly created ticket so we can add comments to it
 		story_id = story['id']
 
-		# Fetch the comments for the ticket
+		# Fetch the comments for the ticket from Pivotal
 		pivotal_comments_url = 'https://www.pivotaltracker.com/services/v5/projects/'+ str(pivotal_project_id) +'/stories/' + str(ticket['id']) + '/comments?fields=file_attachment_ids,text'
 		comments = requests.get(pivotal_comments_url, headers=pivotal_headers)
 		comments = json.loads(comments.text)
 
-		# Create each comment
+		# Go through each comment
 		for comment in comments:
+
 			# Null our comment content so we add do it
 			text = ''
 
@@ -132,10 +146,15 @@ for ticket in tickets:
 			clubhouse_comment_url = "https://api.clubhouse.io/api/v3/stories/" + str(story_id) + "/comments"
 			new_comment = requests.post(clubhouse_comment_url, headers=clubhouse_headers, data = new_comment_data)
 
+		# Print to the terminal if successful
 		print("Created a ticket: " + name + " that had " + str(len(comments)) + " comments.")
 	except:
+
+		# Print the name of any ticket that fails!
 		print("There was a problem with ticket called " + name)
 	continue
+
+	# And you're done!
 
 
 			

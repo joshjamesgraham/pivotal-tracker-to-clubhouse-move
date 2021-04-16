@@ -1,9 +1,9 @@
 Dead easy move from Pivotal Tracker to Clubhouse.
 
-1. Get your Pivotal Project IDs and Pivotal User IDS
+1. Get your Pivotal Project IDs and Pivotal User IDs
 2. Get your Clubhouse Project IDs
 3. Get API creds for both
-4. Rename .env.example to .env and paste these IDs in. You can just comment them. They're only for reference.
-5. Set the various config vars in .env
+4. Rename .env.example to clubhousemovevars.py and paste these IDs in. You can just comment them. They're only for reference
+5. Set the various config vars in clubhousemovevars.py
 6. Pay special attention to comment_author and ticket_requester as these will be the author of any comments and requester of tickets when created in Clubouse
-7. Bear in mind, Chores in Pivotal are not technically stories, and Chores and Bugs cannot be created via the Clubhouse API so you'll need to tag these with something to keep track of them.
+7. Bear in mind, Chores in Pivotal are not technically stories so these should be changed to Stories, and Chores and Bugs cannot be created via the Clubhouse API so you'll need to tag these with something to keep track of them.
